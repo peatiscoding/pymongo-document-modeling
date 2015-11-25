@@ -19,3 +19,7 @@ In your python environment, install dependencies:
 In your console: Starts your mongod engine.
 
 ``` > sudo mongod```
+
+Run the test
+
+``` > env/bin/python -m unittest discover```
