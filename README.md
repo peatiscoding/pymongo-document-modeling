@@ -19,7 +19,19 @@ class SimpleDocument(doc.Doc):
         collection_name = "simple_document"
 ```
 
-Inherit from existing class.
+Load and Save is as simple as Django's Model.
+
+```python
+d = SimpleDocument()
+d.int_val = 500
+d.save() # document is saved to your mongodb
+
+loaded = SimpleDocument(d.object_id)
+print d.int_val # 500
+print d.str_Val # default_value_of_string
+```
+
+For more complex classes, you can inherit from existing class, override existing fields.
 
 ```python
 class ABitComplexDocument(SimpleDocument):
