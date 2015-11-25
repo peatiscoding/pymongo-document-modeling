@@ -67,10 +67,12 @@ In your python environment, install dependencies:
 
 ## Fire up your test bed,
 
-In your console: Starts your mongod engine.
+In your console: start your ```mongod```.
 
 ``` > sudo mongod```
 
 Run the test
 
 ``` > env/bin/python -m unittest discover```
+
+Currently working on complete document of fields. 
