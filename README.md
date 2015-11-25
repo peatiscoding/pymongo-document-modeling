@@ -10,7 +10,7 @@ This document modeling library designed with OOP as a goal. Therefore it can ass
 
 Simple class a like schema definition.
 
-```
+```python
 class SimpleDocument(doc.Doc):
     int_val = doc.FieldNumeric()
     str_val = doc.FieldString(default="default_value_of_string")
@@ -21,7 +21,7 @@ class SimpleDocument(doc.Doc):
 
 Inherit from existing class.
 
-```
+```python
 class ABitComplexDocument(SimpleDocument):
     int_val_2 = doc.FieldNumeric(none=False)
     str_val = doc.FieldString(default="default_value_changed")
@@ -32,7 +32,7 @@ class ABitComplexDocument(SimpleDocument):
 
 Nest them in a list of documents.
 
-```
+```python
 class HolderOfSimpleDocuments(doc.Doc):
     list_of_docs = doc.FieldList(doc.FieldDoc(SimpleDocument))
 
