@@ -8,6 +8,8 @@ This document modeling library designed with OOP as a goal. Therefore it can ass
 
 ## How to Use
 
+Simple class a like schema definition.
+
 ```
 class SimpleDocument(doc.Doc):
     int_val = doc.FieldNumeric()
@@ -17,7 +19,26 @@ class SimpleDocument(doc.Doc):
         collection_name = "simple_document"
 ```
 
-This allow 
+Inherit from existing class.
+
+```
+class ABitComplexDocument(SimpleDocument):
+    int_val_2 = doc.FieldNumeric(none=False)
+    str_val = doc.FieldString(default="default_value_changed")
+
+    class Meta:
+        collection_name = ":complex_1"  # use ':' to annotate the system that this will share the same collection
+```
+
+Nest them in a list of documents.
+
+```
+class HolderOfSimpleDocuments(doc.Doc):
+    list_of_docs = doc.FieldList(doc.FieldDoc(SimpleDocument))
+
+    class Meta:
+        collection_name = "document_holders"
+```
 
 # Running this project
 
