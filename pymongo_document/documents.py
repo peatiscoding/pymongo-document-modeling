@@ -35,7 +35,7 @@ class Docs(object):
     def write(self, document, **kwargs):
         document['_id'] = kwargs.get('object_id', document['_id'] or None)
         if document['_id'] is None:
-            document.pop("_id", None)
+            document.pop("_id")
         if self.sub_collection_name is not None:
             document['_subtype'] = self.sub_collection_name
         return self.o.save(document)
@@ -670,7 +670,7 @@ class Doc(FieldSpecAware):
     def save(self):
         self.validate()
         self.object_id = self.manager.write(self.document())
-        self._injected_object_id = None     # ObjectId has been commited.
+        self._injected_object_id = None     # ObjectId has been committed.
         return self.object_id
 
     def invoke(self, user, requested_operation):
@@ -688,6 +688,11 @@ class Doc(FieldSpecAware):
         if self.manager.collection_name is None:
             raise DeveloperFault(_("Unable to check permission against non-modeled document"))
         user.can("%s+%s" % (self.manager.collection_name, action), args[0] if len(args) > 0 else None, True)
+
+    def __eq__(self, other):
+        if issubclass(other.__class__, self.__class__):
+            return self.object_id == other.object_id
+        return False
 
 
 class Validatable(Doc):
