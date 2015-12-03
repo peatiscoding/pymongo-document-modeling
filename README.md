@@ -8,7 +8,7 @@ This document modeling library designed with OOP as a goal. Therefore it can ass
 
 ## How to Use
 
-Simple class a like schema definition.
+Learn by example is simplest, and fastest. Here are some quick and dirty simple class examples.
 
 ```python
 class SimpleDocument(doc.Doc):
@@ -16,7 +16,7 @@ class SimpleDocument(doc.Doc):
     str_val = doc.FieldString(default="default_value_of_string")
 
     class Meta:
-        collection_name = "simple_document"
+        collection_name = "simple_document"         # Special class to annotate the document name to be saved.
 ```
 
 Load and Save is as simple as Django's Model.
@@ -39,10 +39,10 @@ class ABitComplexDocument(SimpleDocument):
     str_val = doc.FieldString(default="default_value_changed")
 
     class Meta:
-        collection_name = ":complex_1"  # use ':' to annotate the system that this will share the same collection
+        collection_name = ":complex_1"  # use ':' to annotate the system to let this data model shared parent's collection
 ```
 
-Nest them in a list of documents.
+Mongo doesn't have join, but we could establish connection between collection. We facilitate this by nesting them in a list of documents.
 
 ```python
 class HolderOfSimpleDocuments(doc.Doc):
@@ -51,6 +51,8 @@ class HolderOfSimpleDocuments(doc.Doc):
     class Meta:
         collection_name = "document_holders"
 ```
+
+There are many more type of example, please see the complete list of documentation below.
 
 # Running this project
 
@@ -76,3 +78,50 @@ Run the test
 ``` > env/bin/python -m unittest discover```
 
 Currently working on complete document of fields. 
+
+# References
+
+## Document
+
+Document is designed with ```django``` model in mind. With help of special ```Meta``` class, we can beautifully annotate
+the document with ```indices```, and much more.
+
+To create a new document, you can simply start by extending ```Doc``` class.
+
+```python
+import pymongo_document.documents as doc
+
+class MySimpleDoc(doc.Doc):
+    # Define fields here
+    name = doc.FieldString(max_length=30, none=False)
+
+    class Meta:
+        collection_name = 'my_simple_doc'
+```
+
+With this code, ```MySimpleDoc``` will be created when this module is imported. This ```MySimpleDoc``` will have exactly
+2 fields.
+
+1. Field ```name``` is created as a string field, cannot be ```None```, and text length must not exceeds 30.
+1. Field ```object_id``` is also (automatically) created by inherit it from ```doc.Doc``` class. You can explicitly 
+override this field, by redeclare the field with exacty same name. The type can be totally different.
+ 
+... TBC
+
+## Fields
+
+### FieldObjectId
+
+Use this field to store any ```ObjectId```. But If you would like to store another document reference. 
+Try ```FieldDoc``` or ```FieldAnyDoc``` instead.
+
+*Usage*
+
+```python
+class SimpleDocument(doc.Doc):
+    oid = FieldObjectId()
+```
+
+Note that normally if you inherit from ```Doc``` you will automatically get ```object_id``` field for free.
+
+
