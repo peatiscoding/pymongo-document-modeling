@@ -60,6 +60,34 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(l[0].str_val, "default_value_changed")
         self.assertEqual(l[0].int_val, None)        # int_val is inherited
 
+    def test_object_id_field(self):
+
+        class D(doc.Doc):
+            oid = doc.FieldObjectId(none=False)
+
+            class Meta:
+                collection_name = 'test_doc'
+
+        o = D()
+
+        def wrongly_assigned():
+            o.object_id = 3
+
+        self.assertRaises(err.FieldValidationError, wrongly_assigned)   # Unable to assign incorrect data type
+        self.assertRaises(err.FieldValidationError, o.save)             # oid is required.
+
+        def wrong_data_type_assigned():
+            o.oid = str(doc.FieldObjectId.new_id())
+
+        self.assertRaises(err.FieldValidationError, wrong_data_type_assigned)   # Need to be ObjectId only.
+
+        o.oid = doc.FieldObjectId.new_id()
+        o.save()
+
+        r = D(o.object_id)
+        self.assertEqual(r.object_id, o.object_id)
+        self.assertEqual(r.oid, o.oid)
+
     def test_list_field(self):
         s = SimpleDocument()
         s.str_val = "500"

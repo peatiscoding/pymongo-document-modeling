@@ -169,7 +169,7 @@ class FieldSpec(object):
         if not self.none:
             self.add_builtin_validator(lambda v: v is None, "Cannot assign None to Non-none field.")
         if len(self.classes) > 0:
-            self.add_builtin_validator(lambda v: not isinstance(v, self.classes), "Invalid class.")
+            self.add_builtin_validator(lambda v: not isinstance(v, self.classes), "Invalid data type.")
         if self.choices is not None and len(self.choices) > 0:
             self.add_builtin_validator(lambda v: v not in self.choices, "Value is not within choices.")
         if self.max_length > 0:

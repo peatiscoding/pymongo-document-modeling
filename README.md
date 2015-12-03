@@ -130,6 +130,12 @@ class SimpleDocument(doc.Doc):
     oid = FieldObjectId()
 ```
 
-Note that normally if you inherit from ```Doc``` you will automatically get ```object_id``` field for free.
+ObjectId field accepts ```bson.ObjectId``` instance, or ```bson.ObjectId``` compatible string (24 alphanumeric string). 
+
+*Note* that normally if you inherit from ```Doc``` you will automatically get ```object_id``` field for free.
+
+### FieldNumeric
+
+Use this field to store any numeric numbers.
 
 
