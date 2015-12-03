@@ -89,7 +89,7 @@ the document with ```indices```, and much more.
 To create a new document, you can simply start by extending ```Doc``` class.
 
 ```python
-import pymongo_document.documents as doc
+from pymongo_document import documents as doc
 
 class MySimpleDoc(doc.Doc):
     # Define fields here
@@ -104,7 +104,15 @@ With this code, ```MySimpleDoc``` will be created when this module is imported. 
 
 1. Field ```name``` is created as a string field, cannot be ```None```, and text length must not exceeds 30.
 1. Field ```object_id``` is also (automatically) created by inherit it from ```doc.Doc``` class. You can explicitly 
-override this field, by redeclare the field with exacty same name. The type can be totally different.
+override this field, by redeclare the field with exact same name. The type can be totally different.
+
+```python
+o = MySimpleDoc()           # Create a new MySimpleDoc instance
+o.save()                    # Error thrown, 'name' is required.
+o.name = 1                  # Error thrown, in correct type, 'basestring' is required.
+o.name = 'peatiscoding'     # Set name
+o.save()                    # Successfully saved to collection 'my_simple_doc'
+```
  
 ... TBC
 
