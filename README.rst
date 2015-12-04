@@ -60,7 +60,7 @@ simple class examples.
 
         class Meta:
             collection_name = "simple_document"         # Special class to annotate the document name to be saved.
-            connection_name = "test_data_pool"          # Will reference your "test_data_pool" connection
+            connection_name = "test_data_pool"          # Explicitly state connection_name, (If omitted, 'default' will be used)
 
 Load and Save is as simple as Django’s Model.
 
