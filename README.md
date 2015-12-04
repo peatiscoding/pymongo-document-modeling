@@ -138,4 +138,9 @@ ObjectId field accepts ```bson.ObjectId``` instance, or ```bson.ObjectId``` comp
 
 Use this field to store any numeric numbers.
 
+*Usage*
 
+```python
+class SimpleDocument(doc.Doc):
+    amount = FieldNumeric()
+```
