@@ -1,6 +1,6 @@
 __author__ = "peatiscoding"
 from bson import ObjectId
-from conf import db as connect
+from conf import get_connection
 from errors import DeveloperFault, DocumentValidationError, FieldValidationError
 import helpers as helper
 import gettext as _
@@ -15,16 +15,18 @@ class Docs(object):
     """
     Database Manager
     """
-    db = connect()
     installed = {}
     _on_delete = {}
 
-    def __init__(self, collection_name):
+    def __init__(self, collection_name, connection_name='default'):
         super(Docs, self).__init__()
         db_name, sub_name = collection_name.split(":", 1) if ":" in collection_name else (collection_name, None)
         self.collection_name = collection_name
         self.sub_collection_name = sub_name
         self.db_name = db_name
+        # properly configure db object.
+        self.db = get_connection(connection_name)
+
         if db_name is None:
             raise DeveloperFault("Unable to create empty database name document manager")
         self.o = self.db["intradoc_%s" % db_name]
@@ -610,6 +612,7 @@ class _FieldSpecAwareMetaClass(type):
         # register myself to Doc repository
         if 'collection_name' in meta:
             collection_name = meta['collection_name']
+            connection_name = meta['connection_name'] if 'connection_name' in meta else 'default'
 
             if re.compile('^:').match(collection_name):
                 # find "first" parent class with manager
@@ -618,7 +621,7 @@ class _FieldSpecAwareMetaClass(type):
                     raise DeveloperFault("Unable to extend empty non-discoverable parent class")
                 collection_name = "%s%s" % (parent_collection_name, collection_name)
 
-            dct['manager'] = Docs(collection_name)
+            dct['manager'] = Docs(collection_name, connection_name=connection_name)
             clx = super(_FieldSpecAwareMetaClass, cls).__new__(cls, clsname, bases, dct)
             # Register indexing see:
             # http://api.mongodb.org/python/current/api/pymongo/collection.html#pymongo.collection.Collection.create_index

@@ -28,5 +28,5 @@ setup(
     ],
     keywords=['pymongo', 'database', 'mongodb', 'modeling'],
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    install_requires=['six', 'pymongo'],
+    install_requires=['six', 'pymongo', 'configparser'],
 )
