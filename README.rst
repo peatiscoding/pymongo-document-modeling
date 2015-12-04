@@ -10,6 +10,14 @@ Feature
 This document modeling library designed with OOP as a goal. Therefore it
 can associate field, and inherit it to its subclasses.
 
+Installation
+------------
+
+.. code:: python
+
+    > pip install pymongo-document-modeling
+
+
 How to Use
 ----------
 
@@ -17,6 +25,8 @@ Learn by example is simplest, and fastest. Here are some quick and dirty
 simple class examples.
 
 .. code:: python
+    
+    from pymongo_document import documents as doc
 
     class SimpleDocument(doc.Doc):
         int_val = doc.FieldNumeric()
