@@ -24,11 +24,13 @@ Configuration
 
 Once you have installed ``pymongo-document-modeling`` module. Now you 
 can start configure your pymongo. Simply create a configuration file called
-``pymongo-connectors.ini`` and add 'default' section in, state ``connection_string`` and ``database_name``.
+``pymongo-connectors.ini`` and add 'default' section in. Then state ``connection_string`` 
+and ``database_name`` keys with your values.
 
 Here is a dirty example.
 
-.. code:: 
+.. code:: python
+
     [default]
     connection_string = mongodb://localhost:27017/
     database_name = test_beds
