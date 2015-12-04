@@ -28,7 +28,7 @@ can start configure your pymongo. Simply create a configuration file called
 
 Here is a dirty example.
 
-.. code:: ini
+.. code:: 
     [default]
     connection_string = mongodb://localhost:27017/
     database_name = test_beds
