@@ -115,6 +115,19 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertTrue(c in o.list_of_docs)
         self.assertTrue(s in o.list_of_docs)
 
+    def test_connections(self):
+        thrown = False
+        try:
+            class BadConnectionName(doc.Doc):
+                useless_field = doc.FieldNumeric()
+
+                class Meta:
+                    collection_name = 'create_me_if_you_can'
+                    connection_name = 'bad_connection_name'
+        except err.DeveloperFault:
+            thrown = True
+
+        self.assertTrue(thrown)
 
 if __name__ == '__main__':
     unittest.main()

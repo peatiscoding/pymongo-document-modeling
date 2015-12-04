@@ -13,10 +13,34 @@ can associate field, and inherit it to its subclasses.
 Installation
 ------------
 
+Begin with installation
+
 .. code:: python
 
     > pip install pymongo-document-modeling
+    
+Configuration
+-------------
 
+Once you have installed ``pymongo-document-modeling`` module. Now you 
+can start configure your pymongo. Simply create a configuration file called
+``pymongo-connectors.ini`` and add 'default' section in, state ``connection_string`` and ``database_name``.
+
+Here is a dirty example.
+
+.. code:: ini
+    [default]
+    connection_string = mongodb://localhost:27017/
+    database_name = test_beds
+    [test_data_pool]
+    connection_string = mongodb://localhost:27017/
+    database_name = test_data_pool
+
+For more advance cases. You can actually specify many connection sections as you want 
+(But ``default`` section is required).
+ 
+Now within your model, you can reference this connector name. If omitted ``default`` will be used. 
+(See next example ``Meta`` class).
 
 How to Use
 ----------
@@ -34,6 +58,7 @@ simple class examples.
 
         class Meta:
             collection_name = "simple_document"         # Special class to annotate the document name to be saved.
+            connection_name = "test_data_pool"          # Will reference your "test_data_pool" connection
 
 Load and Save is as simple as Django’s Model.
 
