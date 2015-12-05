@@ -23,11 +23,9 @@ Configuration
 -------------
 
 Once you have installed ``pymongo-document-modeling`` module. Now you 
-can start configure your pymongo. Simply create a configuration file called
-``pymongo-connectors.ini`` and add 'default' section in. Then state ``connection_string`` 
-and ``database_name`` keys with your values.
+can start configure your pymongo. To state the configuration file, first prepare your config.
 
-Here is a dirty example.
+Here is a dirty example of configuration file.
 
 .. code:: python
 
@@ -40,11 +38,23 @@ Here is a dirty example.
 
 For more advance cases. You can actually specify many connection sections as you want 
 (But ``default`` section is required).
- 
-Now within your model, you can reference this connector name. If omitted ``default`` will be used. 
-(See next example ``Meta`` class).
 
-*Note* - if ``pymongo-connectors.ini`` is missing from root directory. This configuration will be assumed.
+Now let the system know where your configuration file is. To do this, call ``conf.update_config()`` 
+before your declare your first class.
+
+.. code:: python
+
+    from pymongo_document import conf
+    
+    # example a - specify the file
+    conf.update_config('conf/my-config.ini')        # read config from os.path.getcwd() + 'conf/my-config.ini'
+    # example b - specify directory (default config file name will be assumed).
+    conf.update_config('conf/')                     # read config from os.path.getcwd() + 'conf/pymongo-connectors.ini'
+ 
+Lastly, within your model, you can reference this connector name. If omitted ``default`` will be used. 
+(See first example in Quick start section's ``Meta`` class).
+
+*Note* If ``conf.update_config()`` never get invoked, this default configuration will be assumed.
 
 .. code:: python
     

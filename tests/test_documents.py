@@ -138,5 +138,9 @@ class TestDocumentBasic(unittest.TestCase):
         conf.update_config('tests')
         define_non_exist_connection_class()
 
+        self.assertRaises(err.DeveloperFault, lambda: conf.update_config('tests/unknown_config_file.ini'))
+        self.assertRaises(err.DeveloperFault, lambda: conf.update_config('tests/conf/'))
+
+
 if __name__ == '__main__':
     unittest.main()
