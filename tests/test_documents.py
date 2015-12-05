@@ -1,5 +1,4 @@
-from pymongo_document import documents as doc
-from pymongo_document import errors as err
+from pymongo_document import documents as doc, errors as err, conf
 import unittest
 
 
@@ -116,18 +115,28 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertTrue(s in o.list_of_docs)
 
     def test_connections(self):
-        thrown = False
-        try:
+        def define_bad_connection_class():
             class BadConnectionName(doc.Doc):
                 useless_field = doc.FieldNumeric()
 
                 class Meta:
                     collection_name = 'create_me_if_you_can'
                     connection_name = 'bad_connection_name'
-        except err.DeveloperFault:
-            thrown = True
 
-        self.assertTrue(thrown)
+        self.assertRaises(err.DeveloperFault, define_bad_connection_class)
+
+        def define_non_exist_connection_class():
+            class BadConnectionName(doc.Doc):
+                useless_field = doc.FieldNumeric()
+
+                class Meta:
+                    collection_name = 'create_me_if_you_can'
+                    connection_name = 'test_data_pool'
+
+        self.assertRaises(err.DeveloperFault, define_non_exist_connection_class)
+
+        conf.update_config('tests')
+        define_non_exist_connection_class()
 
 if __name__ == '__main__':
     unittest.main()
