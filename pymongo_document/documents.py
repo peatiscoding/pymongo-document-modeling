@@ -174,10 +174,12 @@ class FieldSpec(object):
             self.add_builtin_validator(lambda v: not isinstance(v, self.classes), "Invalid data type.")
         if self.choices is not None and len(self.choices) > 0:
             self.add_builtin_validator(lambda v: v not in self.choices, "Value is not within choices.")
+        if self.fixed_length is not None:
+            self.add_builtin_validator(lambda v: len(v) != self.fixed_length, "Value must be %s long." % self.fixed_length)
+            if self.max_length > 0:
+                raise DeveloperFault("max_length, and fixed_length cannot be used together.")
         if self.max_length > 0:
             self.add_builtin_validator(lambda v: len(v) > self.max_length, "Value is not be longer than %s." % self.max_length)
-        if self.fixed_length is not None:
-            self.add_builtin_validator(lambda v: len(v) == self.fixed_length, "Value must be %s long." % self.fixed_length)
 
     def add_builtin_validator(self, callback, message):
         def callme(value, name):
@@ -277,7 +279,7 @@ class FieldNumeric(FieldSpec):
 
             # update kwargs
             kwargs.update({
-                'validators': [validate_min_max]
+                'validators': kwargs.pop('validators', []) + [validate_min_max]
             })
 
         super(FieldNumeric, self).__init__((int, float, long), **kwargs)
@@ -286,6 +288,18 @@ class FieldNumeric(FieldSpec):
 class FieldString(FieldSpec):
 
     def __init__(self, **kwargs):
+        pattern = kwargs.pop('pattern', None)
+        if pattern is not None:
+            if not hasattr(pattern, 'match') or not callable(getattr(pattern, 'match')):
+                pattern = re.compile(pattern)
+
+            def validate_regex(value, name):
+                if pattern.match(value) is None:
+                    raise FieldValidationError(value, 'must match given pattern', name)
+            kwargs.update({
+                'validators': kwargs.pop('validators', []) + [validate_regex]
+            })
+            del validate_regex
         super(FieldString, self).__init__(basestring, **kwargs)
 
     def from_python(self, value):

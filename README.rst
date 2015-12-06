@@ -202,9 +202,19 @@ Use this field to store any numeric numbers.
 .. code:: python
 
     class SimpleDocument(doc.Doc):
+        VALUE_A = 1
+        VALUE_B = 2
+        VALUE_C = 3
+        VALUES = (
+            (VALUE_A, '1st value'),
+            (VALUE_B, '2nd value'),
+            (VALUE_C, '3rd value')
+        )
+        
         amount1 = doc.FieldNumeric(default=3, max_value=50, min_value=10)
         amount2 = doc.FieldNumeric(max_value=40, none=False)
         amount3 = doc.FieldNumeric()        # no max, no min, can be None, no default
+        amount4 = doc.FieldNumeric(choices=VALUES)
         
 Available options are ...
 
@@ -212,6 +222,38 @@ Available options are ...
 * ``min_value`` - (numeric) set lower bound of field. Default is None (no lower bound).
 * ``default`` - (numeric) set a default value for this field. Default is None.
 * ``none`` - (boolean) set to False to prohibit None value for this field. Default is True.
+* ``choices`` - (tuple, list) set possible values for the field. Default is None.
+
+FieldString
+~~~~~~~~~~~
+
+Use this file to store any ``basestring`` instance.
+
+*Usage*
+
+.. code:: python
+
+    class SimpleDocument(doc.Doc):
+        VALUE_A = 'A'
+        VALUE_B = 'B'
+        VALUE_C = 'C'
+        VAULES = (
+            (VALUE_A, 'A description'),
+            (VALUE_B, 'B description'),
+            (VALUE_C, 'C description'),
+        )
+        str_value = doc.FieldNumeric(default="default_string", max_length=10)
+        fixed_length_str_value = doc.FieldString(fixed_length=2)
+        fixed_choices_str_value = doc.FieldString(choices=VALUES, default=VALUE_A)
+        fixed_pattern_str_value = doc.FieldString(pattern=r'[a-z]{2}\d{5}3-[A-Z]{2}')
+
+* ``pattern`` - (SRE_Pattern|regex pattern string) set a required pattern for input string. Default is None.
+* ``max_length`` - (numeric) set maximum character count. Default is None (no upper bound).
+* ``fix_length`` - (numeric) set constant character count. Default is None (no upper bound).
+* ``default`` - (numeric) set a default value for this field. Default is None.
+* ``none`` - (boolean) set to False to prohibit None value for this field. Default is True.
+* ``choices`` - (tuple, list) set possible values for the field. Default is None.
+        
 
 FieldDict
 ~~~~~~~~~

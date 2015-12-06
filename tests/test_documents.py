@@ -165,6 +165,68 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(r.content.int_val, 500)
         self.assertEqual(r.content.str_val, "default_value")
 
+    def test_string_field(self):
+        def define_bad_class():
+            class StringDocument(doc.Doc):
+                str = doc.FieldString(max_length=5, fixed_length=3)
+
+                class Meta:
+                    collection_name = 'create_me_if_you_can'
+        self.assertRaises(err.DeveloperFault, define_bad_class)
+
+        class StringDocument(doc.Doc):
+            str = doc.FieldString(max_length=10)
+            str_fixed = doc.FieldString(fixed_length=14)
+            str_required = doc.FieldString(none=False)
+            str_defaulted = doc.FieldString(default="new_default_value")
+            str_patterned = doc.FieldString(pattern=r'[a-z]\d{3}')
+
+            class Meta:
+                collection_name = 'test_doc_string'
+        o = StringDocument()
+
+        def assign_bad_value():
+            o.str = "this is too long string value"
+        self.assertRaises(err.FieldValidationError, assign_bad_value)
+        o.str = "short val"
+
+        def assign_too_short_value():
+            o.str_fixed = "too short"
+        self.assertRaises(err.FieldValidationError, assign_too_short_value)
+
+        def assign_too_long_value():
+            o.str_fixed = "too looooonnnng"
+        self.assertRaises(err.FieldValidationError, assign_too_long_value)
+        o.str_fixed = "balanced value"
+
+        def assign_wrong_pattern_value(val):
+            o.str_patterned = val
+        self.assertRaises(err.FieldValidationError, lambda: assign_wrong_pattern_value(1345))
+        self.assertRaises(err.FieldValidationError, lambda: assign_wrong_pattern_value('3a53'))
+        self.assertRaises(err.FieldValidationError, lambda: assign_wrong_pattern_value('3413'))
+        self.assertRaises(err.FieldValidationError, lambda: assign_wrong_pattern_value('A350'))
+        o.str_patterned = 'z350'
+        o.str_patterned = 'd591'
+        o.str_patterned = 'b999'
+
+        self.assertRaises(err.FieldValidationError, lambda: o.save())   # str_required is required
+
+        o.str_required = "some_value"
+        o.save()
+
+        r = StringDocument(o.object_id)
+        self.assertEqual(r.object_id, o.object_id)
+        self.assertEqual(o.str, "short val")
+        self.assertEqual(o.str_required, "some_value")
+        self.assertEqual(o.str_fixed, "balanced value")
+        self.assertEqual(o.str_defaulted, "new_default_value")
+        self.assertEqual(o.str_patterned, "b999")
+        self.assertEqual(r.str, o.str)
+        self.assertEqual(r.str_required, o.str_required)
+        self.assertEqual(r.str_fixed, o.str_fixed)
+        self.assertEqual(r.str_defaulted, o.str_defaulted)
+        self.assertEqual(r.str_patterned, o.str_patterned)
+
     def test_numeric_field(self):
         def define_bad_numeric_class():
             class NumericDocument(doc.Doc):
@@ -175,9 +237,18 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertRaises(err.DeveloperFault, define_bad_numeric_class)
 
         class NumericDocument(doc.Doc):
+            VALUE_1 = 1
+            VALUE_2 = 2
+            VALUE_3 = 3
+            NUMBER_4_VALUES = (
+                (VALUE_1, '1st value'),
+                (VALUE_2, '2nd value'),
+                (VALUE_3, '3rd value')
+            )
             number1 = doc.FieldNumeric(max_value=30, min_value=10, none=False)
             number2 = doc.FieldNumeric(max_value=30.5, none=False)
             number3 = doc.FieldNumeric(min_value=-15.0, default=17)
+            number4 = doc.FieldNumeric(choices=NUMBER_4_VALUES, default=VALUE_1)
 
             class Meta:
                 collection_name = 'test_doc_numeric'
@@ -194,15 +265,27 @@ class TestDocumentBasic(unittest.TestCase):
             o.number1 = -50
         self.assertRaises(err.FieldValidationError, assign_wrong_value2)
         o.number2 = -50
+
+        def assign_out_of_choice_value(val):
+            o.number4 = val
+        self.assertRaises(err.FieldValidationError, lambda: assign_out_of_choice_value(5))
+        self.assertRaises(err.FieldValidationError, lambda: assign_out_of_choice_value(-1))
+        self.assertRaises(err.FieldValidationError, lambda: assign_out_of_choice_value(0))
+        self.assertRaises(err.FieldValidationError, lambda: assign_out_of_choice_value(4.4))
+        self.assertRaises(err.FieldValidationError, lambda: assign_out_of_choice_value(3.2))
+        self.assertRaises(err.FieldValidationError, lambda: assign_out_of_choice_value(2.5))
+        o.number4 = NumericDocument.VALUE_2
         o.save()
 
         r = NumericDocument(o.object_id)
         self.assertEqual(o.number1, 30)
         self.assertEqual(o.number2, -50)
         self.assertEqual(o.number3, 17)
+        self.assertEqual(o.number4, NumericDocument.VALUE_2)
         self.assertEqual(r.number1, o.number1)
         self.assertEqual(r.number2, o.number2)
         self.assertEqual(r.number3, o.number3)
+        self.assertEqual(r.number4, o.number4)
 
     def test_connections(self):
         def define_bad_connection_class():
