@@ -2,6 +2,7 @@ __author__ = "peatiscoding"
 from bson import ObjectId
 from conf import get_connection
 from errors import DeveloperFault, DocumentValidationError, FieldValidationError
+from pymongo.cursor import Cursor
 import helpers as helper
 import gettext as _
 import pymongo
@@ -9,6 +10,19 @@ import datetime, time
 import inspect
 import six
 import re
+
+
+class WorkingCursor(Cursor):
+    """
+    Cursor
+    """
+    def __init__(self, *args, **kwargs):
+        super(WorkingCursor, self).__init__(*args, **kwargs)
+        self.inflater = None
+
+    def next(self):
+        o = super(WorkingCursor, self).next()
+        return self.inflater(o) if self.inflater else o
 
 
 class Docs(object):
@@ -42,7 +56,7 @@ class Docs(object):
             document['_subtype'] = self.sub_collection_name
         return self.o.save(document)
 
-    def delete(self, cond={}, verbose=False):
+    def delete(self, cond=None, verbose=False):
         """
         Call pymongo's delete_many, cascade delete logic based on primary_key attracted from deleted instances.
 
@@ -50,6 +64,7 @@ class Docs(object):
         :param verbose:
         :return:
         """
+        cond = {} if cond is None else cond
         on_delete = self._on_delete[self.db_name] if self.db_name in self._on_delete else []
         if verbose:
             print 'Deleting "%s": %s' % (self.db_name, cond)
@@ -76,6 +91,25 @@ class Docs(object):
         if verbose:
             print 'Updating "%s": %s' % (self.db_name, cond)
         self.o.update_many(cond, update, upsert=False)
+
+    def filter(self, *args, **kwargs):
+        cursor = self.o.find(*args, **kwargs)
+
+        def inflate(doc):
+            print "Inflating %s" % doc
+            doc_key = self.collection_name
+            if '_subtype' in doc:
+                subtype = doc.pop('_subtype')
+                doc_key = "%s:%s" % (self.db_name, subtype)
+            if doc_key not in Docs.installed:
+                raise DeveloperFault("Unknown document type:%s" % doc_key)
+            o = Docs.installed[doc_key]()
+            o.inflate(doc)
+            return o
+
+        r = WorkingCursor(self.o, *args, **kwargs)
+        r.inflater = inflate
+        return r
 
     def find(self, pagesize=0, page=0, cond=None, **kwargs):
         """

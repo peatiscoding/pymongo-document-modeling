@@ -24,6 +24,9 @@ class HolderOfSimpleDocuments(doc.Doc):
     class Meta:
         collection_name = "document_holders"
 
+# Clean up
+SimpleDocument.manager.delete()
+
 
 class TestDocumentBasic(unittest.TestCase):
     """
@@ -174,6 +177,11 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(found[0].int_val, 35)
         self.assertEqual(found[1].int_val, 37)
         self.assertEqual(found[2].int_val, 55)
+
+        # Test filter API
+        cursor = SimpleDocument.manager.filter()
+
+        # FIXME: using it correctly - test it with sort, test it with collection __getitem__ method
 
         # Clean up
         SimpleDocument.manager.delete({'str_val': 'find_me'})
