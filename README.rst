@@ -202,4 +202,30 @@ Use this field to store any numeric numbers.
 .. code:: python
 
     class SimpleDocument(doc.Doc):
-        amount = FieldNumeric()
+        amount1 = FieldNumeric(default=3, max_value=50, min_value=10)
+        amount2 = FieldNumeric(max_value=40, none=False)
+        amount3 = FieldNumeric()        # no max, no min, can be None, no default
+        
+Available options are ...
+
+* ``max_value`` - (numeric) set upper bound of field. Default is None (no upper bound).
+* ``min_value`` - (numeric) set lower bound of field. Default is None (no lower bound).
+* ``default`` - (numeric) set a default value for this field. Default is None.
+* ``none`` - (boolean) set to False to prohibit None value for this field. Default is True.
+
+FieldDict
+~~~~~~~~~
+
+Use this field to store complete any python dict without schema.
+
+*Usage*
+
+.. code:: python
+
+    class SimpleDocument(doc.Doc):
+        data = FieldDict()
+        
+Available options are ...
+
+* ``default`` - (dict) set a default value for this field. Default is None.
+* ``none`` - (boolean) set to False to prohibit None value for this field. Default is True.
