@@ -26,8 +26,11 @@ class HolderOfSimpleDocuments(doc.Doc):
 
 
 class TestDocumentBasic(unittest.TestCase):
+    """
+    Test Cases
+    """
 
-    def test_class_define(self):
+    def test_define_class(self):
         d = SimpleDocument()
         d.save()
 
@@ -45,7 +48,7 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(item.int_val, 750)
         self.assertEqual(item.str_val, "default_value_of_string")
 
-    def test_class_inheritance(self):
+    def test_document_inheritance(self):
         c = ABitComplexDocument()
         self.assertRaises(err.FieldValidationError, c.save)     # c.int_val_2 is non-nullable integer value must be set
 
@@ -58,6 +61,123 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(l[0].int_val_2, 300)
         self.assertEqual(l[0].str_val, "default_value_changed")
         self.assertEqual(l[0].int_val, None)        # int_val is inherited
+
+    def test_document_simple_read_write_api(self):
+        # Save
+        o = SimpleDocument()
+        o.int_val = 30
+        o.str_val = "string_value"
+        o.save()
+
+        # Load
+        r = SimpleDocument(o.object_id)
+        self.assertEqual(o.int_val, 30)
+        self.assertEqual(o.str_val, "string_value")
+        self.assertEqual(r.int_val, o.int_val)
+        self.assertEqual(r.str_val, o.str_val)
+
+    def test_document_find_api(self):
+        # Make sure everything is clean before we start
+        SimpleDocument.manager.delete({'str_val': 'find_me'})
+
+        # Create multiple value of SimpleDocument
+        def new_simple_doc(int_val, str_val):
+            o = SimpleDocument()
+            o.int_val = int_val
+            o.str_val = str_val
+            o.save()
+            return o
+        o1 = new_simple_doc(30, 'find_me')
+        o2 = new_simple_doc(32, 'find_me')
+        o3 = new_simple_doc(31, 'find_me')
+
+        # Search with condition
+        found = SimpleDocument.manager.find(cond={
+            'str_val': 'find_me',
+            '$sort': '-int_val'
+        })
+        self.assertEqual(len(found), 3)
+        self.assertEqual(found[0].object_id, o2.object_id)
+        self.assertEqual(found[1].object_id, o3.object_id)
+        self.assertEqual(found[2].object_id, o1.object_id)
+
+        # Search with condition
+        found = SimpleDocument.manager.find(cond={
+            'str_val': 'find_me',
+            'int_val': {'$lt': 31}
+        })
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0].object_id, o1.object_id)
+
+        # Search with condition using $or
+        found = SimpleDocument.manager.find(cond={
+            'str_val': 'find_me',
+            '$or': [
+                {
+                    'int_val': {'$gt': 31}
+                },
+                {
+                    'int_val': {'$lt': 31}
+                }
+            ],
+            '$sort': 'int_val'
+        })
+        self.assertEqual(len(found), 2)
+        self.assertEqual(found[0].object_id, o1.object_id)
+        self.assertEqual(found[1].object_id, o2.object_id)
+
+        # Updated value instantly effect the search result.
+        o3.int_val = 50
+        o3.save()
+
+        found = SimpleDocument.manager.find(cond={
+            'str_val': 'find_me',
+            '$or': [
+                {
+                    'int_val': {'$gt': 31}
+                },
+                {
+                    'int_val': {'$lt': 31}
+                }
+            ],
+            '$sort': 'int_val'
+        })
+        self.assertEqual(found[2].object_id, o3.object_id)
+        self.assertEqual(found[1].object_id, o2.object_id)
+        self.assertEqual(found[0].object_id, o1.object_id)
+
+        # Clean up
+        SimpleDocument.manager.delete({'str_val': 'find_me'})
+
+    def test_document_update_api(self):
+        pass
+
+    def test_list_field(self):
+        s = SimpleDocument()
+        s.str_val = "500"
+        s.int_val = 500
+        s.save()
+
+        c = ABitComplexDocument()
+        c.int_val_2 = 1250
+        c.int_val = 30
+        c.str_val = "123"
+        c.save()
+
+        l = HolderOfSimpleDocuments()
+        l.list_of_docs.append(s)
+        l.list_of_docs.append(c)
+        l.save()
+
+        # load document with object_id
+        o = HolderOfSimpleDocuments(l.object_id)
+        self.assertEqual(o.object_id, l.object_id)
+        self.assertEqual(len(o.list_of_docs), 2)
+        self.assertFalse(c in o.list_of_docs)
+        self.assertTrue(c.object_id in o.list_of_docs)
+        o.populate('list_of_docs')
+        self.assertTrue(c in o.list_of_docs)
+        self.assertTrue(s in o.list_of_docs)
 
     def test_object_id_field(self):
 
@@ -86,33 +206,6 @@ class TestDocumentBasic(unittest.TestCase):
         r = D(o.object_id)
         self.assertEqual(r.object_id, o.object_id)
         self.assertEqual(r.oid, o.oid)
-
-    def test_list_field(self):
-        s = SimpleDocument()
-        s.str_val = "500"
-        s.int_val = 500
-        s.save()
-
-        c = ABitComplexDocument()
-        c.int_val_2 = 1250
-        c.int_val = 30
-        c.str_val = "123"
-        c.save()
-
-        l = HolderOfSimpleDocuments()
-        l.list_of_docs.append(s)
-        l.list_of_docs.append(c)
-        l.save()
-
-        # load document with object_id
-        o = HolderOfSimpleDocuments(l.object_id)
-        self.assertEqual(o.object_id, l.object_id)
-        self.assertEqual(len(o.list_of_docs), 2)
-        self.assertFalse(c in o.list_of_docs)
-        self.assertTrue(c.object_id in o.list_of_docs)
-        o.populate('list_of_docs')
-        self.assertTrue(c in o.list_of_docs)
-        self.assertTrue(s in o.list_of_docs)
 
     def test_dict_field(self):
         class DictFieldDocument(doc.Doc):
