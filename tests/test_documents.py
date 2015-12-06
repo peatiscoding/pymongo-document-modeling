@@ -76,7 +76,7 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(r.int_val, o.int_val)
         self.assertEqual(r.str_val, o.str_val)
 
-    def test_document_find_api(self):
+    def test_document_api(self):
         # Make sure everything is clean before we start
         SimpleDocument.manager.delete({'str_val': 'find_me'})
 
@@ -91,7 +91,7 @@ class TestDocumentBasic(unittest.TestCase):
         o2 = new_simple_doc(32, 'find_me')
         o3 = new_simple_doc(31, 'find_me')
 
-        # Search with condition
+        # Test Find API
         found = SimpleDocument.manager.find(cond={
             'str_val': 'find_me',
             '$sort': '-int_val'
@@ -101,7 +101,7 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(found[1].object_id, o3.object_id)
         self.assertEqual(found[2].object_id, o1.object_id)
 
-        # Search with condition
+        # Find with condition
         found = SimpleDocument.manager.find(cond={
             'str_val': 'find_me',
             'int_val': {'$lt': 31}
@@ -109,7 +109,7 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(len(found), 1)
         self.assertEqual(found[0].object_id, o1.object_id)
 
-        # Search with condition using $or
+        # Find with condition using $or
         found = SimpleDocument.manager.find(cond={
             'str_val': 'find_me',
             '$or': [
@@ -130,6 +130,7 @@ class TestDocumentBasic(unittest.TestCase):
         o3.int_val = 50
         o3.save()
 
+        # Find with nested condition
         found = SimpleDocument.manager.find(cond={
             'str_val': 'find_me',
             '$or': [
@@ -146,11 +147,36 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(found[1].object_id, o2.object_id)
         self.assertEqual(found[0].object_id, o1.object_id)
 
+        # Test Update API, make an update all values by 5.
+        SimpleDocument.manager.update(cond={
+            'str_val': 'find_me'
+        }, update={
+            '$inc': {'int_val': 5}
+        })
+
+        # Check updated for values
+        found = SimpleDocument.manager.find(cond={
+            'str_val': 'find_me',
+            '$or': [
+                {
+                    'int_val': {'$lt': 31}
+                }
+            ],
+            '$sort': 'int_val'
+        })
+        self.assertEqual(len(found), 0)
+
+        found = SimpleDocument.manager.find(cond={
+            'str_val': 'find_me',
+            '$sort': 'int_val'
+        })
+        self.assertEqual(len(found), 3)
+        self.assertEqual(found[0].int_val, 35)
+        self.assertEqual(found[1].int_val, 37)
+        self.assertEqual(found[2].int_val, 55)
+
         # Clean up
         SimpleDocument.manager.delete({'str_val': 'find_me'})
-
-    def test_document_update_api(self):
-        pass
 
     def test_list_field(self):
         s = SimpleDocument()
@@ -406,7 +432,6 @@ class TestDocumentBasic(unittest.TestCase):
 
         self.assertRaises(err.DeveloperFault, lambda: conf.update_config('tests/unknown_config_file.ini'))
         self.assertRaises(err.DeveloperFault, lambda: conf.update_config('tests/conf/'))
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -43,30 +43,64 @@ class Docs(object):
         return self.o.save(document)
 
     def delete(self, cond={}, verbose=False):
+        """
+        Call pymongo's delete_many, cascade delete logic based on primary_key attracted from deleted instances.
+
+        :param cond:
+        :param verbose:
+        :return:
+        """
         on_delete = self._on_delete[self.db_name] if self.db_name in self._on_delete else []
         if verbose:
-            print("Deleting \"%s\": %s" % (self.db_name, cond))
+            print 'Deleting "%s": %s' % (self.db_name, cond)
+
+        # If there are listeners
         if len(on_delete) > 0:
-            # Calculate ids
+            # Calculate ids - and delete them.
             ids = self.o.find(cond).distinct('_id')
             map(lambda de: de(ids, verbose), on_delete)
-        self.o.remove(cond)
+        self.o.delete_many(cond)
+
+    def update(self, cond={}, update={}, **kwargs):
+        """
+        Call pymongo update_many directly, (upsert=False) - no field validation will be applied.
+
+        Use this method at your own risk.
+
+        :param cond:
+        :param update:
+        :param kwargs:
+        :return:
+        """
+        verbose = kwargs.pop('verbose', False)
+        if verbose:
+            print 'Updating "%s": %s' % (self.db_name, cond)
+        self.o.update_many(cond, update, upsert=False)
 
     def find(self, pagesize=0, page=0, cond=None, **kwargs):
+        """
+        Call pymongo find, manipulate pagesize, page based on given cond, and page_size
+
+        :param pagesize:
+        :param page:
+        :param cond:
+        :param kwargs:
+        :return:
+        """
         if cond is None:
             cond = {}
         cond.update(kwargs)
         sort = cond.pop('$sort', '_id')
         # IF you are subclass's manager - then you need to queries only subclass items.
         if self.sub_collection_name is not None:
-            cond['_subtype'] = { '$regex': '^%s' % self.sub_collection_name }
+            cond['_subtype'] = {'$regex': '^%s' % self.sub_collection_name}
         cursor = self.o.find(cond)
 
         # sorting (optional)
         if sort is not None:
             m = re.match('(-?)(.*)', sort)
             if m:
-                cursor.sort(m.group(2), pymongo.DESCENDING if m.group(1) == '-' else pymongo.ASCENDING )
+                cursor.sort(m.group(2), pymongo.DESCENDING if m.group(1) == '-' else pymongo.ASCENDING)
 
         # pagination
         if pagesize > 0:
