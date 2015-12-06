@@ -215,8 +215,6 @@ Use this field to store any numeric numbers.
         amount2 = doc.FieldNumeric(max_value=40, none=False)
         amount3 = doc.FieldNumeric()        # no max, no min, can be None, no default
         amount4 = doc.FieldNumeric(choices=VALUES)
-        
-Available options are ...
 
 * ``max_value`` - (numeric) set upper bound of field. Default is None (no upper bound).
 * ``min_value`` - (numeric) set lower bound of field. Default is None (no lower bound).
@@ -266,8 +264,6 @@ Use this field to store complete any python dict without schema.
 
     class SimpleDocument(doc.Doc):
         data = doc.FieldDict()
-        
-Available options are ...
 
 * ``default`` - (dict) set a default value for this field. Default is None.
 * ``none`` - (boolean) set to False to prohibit None value for this field. Default is True.
