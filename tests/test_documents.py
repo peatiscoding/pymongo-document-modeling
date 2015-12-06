@@ -114,6 +114,96 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertTrue(c in o.list_of_docs)
         self.assertTrue(s in o.list_of_docs)
 
+    def test_dict_field(self):
+        class DictFieldDocument(doc.Doc):
+            data = doc.FieldDict(none=False)
+
+            class Meta:
+                collection_name = 'test_doc2'
+
+        o = DictFieldDocument()
+        o.data = {
+            'this': 'is a new value',
+            'that': {
+                'is': {
+                    'nested': ['array', 'of', 'value']
+                },
+                'or': [
+                    {
+                        'a': 40,
+                        'b': 50,
+                        'c': 60,
+                        'd': [1, 2, 3, {'val': 55}]
+                    }
+                ]
+            }
+        }
+        o.save()
+
+        r = DictFieldDocument(o.object_id)
+        self.assertEqual(r.object_id, o.object_id)
+        self.assertEqual(r.data, o.data)
+        self.assertEqual(r.data['that']['or'][0]['d'][3]['val'], 55)
+
+    def test_nested_field(self):
+        class NestedContentDocument(doc.FieldSpecAware):
+            int_val = doc.FieldNumeric(default=303)
+            str_val = doc.FieldString(default="default_value")
+
+        class NestedFieldDocument(doc.Doc):
+            content = doc.FieldNested(NestedContentDocument)
+
+            class Meta:
+                collection_name = 'test_doc3'
+
+        o = NestedFieldDocument()
+        o.content = NestedContentDocument()
+        o.content.int_val = 500
+        o.save()
+
+        r = NestedFieldDocument(o.object_id)
+        self.assertEqual(r.content.int_val, 500)
+        self.assertEqual(r.content.str_val, "default_value")
+
+    def test_numeric_field(self):
+        def define_bad_numeric_class():
+            class NumericDocument(doc.Doc):
+                number = doc.FieldNumeric(max_value=30, min_value=100)
+
+                class Meta:
+                    collection_name = 'create_me_if_you_can'
+        self.assertRaises(err.DeveloperFault, define_bad_numeric_class)
+
+        class NumericDocument(doc.Doc):
+            number1 = doc.FieldNumeric(max_value=30, min_value=10, none=False)
+            number2 = doc.FieldNumeric(max_value=30.5, none=False)
+            number3 = doc.FieldNumeric(min_value=-15.0, default=17)
+
+            class Meta:
+                collection_name = 'test_doc_numeric'
+
+        o = NumericDocument()
+        self.assertRaises(err.FieldValidationError, lambda: o.save())
+
+        def assign_wrong_value1():
+            o.number1 = 300
+        self.assertRaises(err.FieldValidationError, assign_wrong_value1)
+        o.number1 = 30      # set at max_value is okay
+
+        def assign_wrong_value2():
+            o.number1 = -50
+        self.assertRaises(err.FieldValidationError, assign_wrong_value2)
+        o.number2 = -50
+        o.save()
+
+        r = NumericDocument(o.object_id)
+        self.assertEqual(o.number1, 30)
+        self.assertEqual(o.number2, -50)
+        self.assertEqual(o.number3, 17)
+        self.assertEqual(r.number1, o.number1)
+        self.assertEqual(r.number2, o.number2)
+        self.assertEqual(r.number3, o.number3)
+
     def test_connections(self):
         def define_bad_connection_class():
             class BadConnectionName(doc.Doc):

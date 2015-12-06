@@ -263,6 +263,23 @@ class FieldBoolean(FieldSpec):
 class FieldNumeric(FieldSpec):
 
     def __init__(self, **kwargs):
+        max_value = kwargs.pop('max_value', None)
+        min_value = kwargs.pop('min_value', None)
+        if max_value is not None or min_value is not None:
+            if max_value is not None and min_value is not None and max_value <= min_value:
+                raise DeveloperFault('max_value must be greater than min_value')
+
+            def validate_min_max(value, name):
+                if max_value is not None and value > max_value:
+                    raise FieldValidationError(value, 'must be less than %s' % max_value, name)
+                if min_value is not None and value < min_value:
+                    raise FieldValidationError(value, 'must be greater than %s' % min_value, name)
+
+            # update kwargs
+            kwargs.update({
+                'validators': [validate_min_max]
+            })
+
         super(FieldNumeric, self).__init__((int, float, long), **kwargs)
 
 
@@ -433,6 +450,15 @@ class FieldList(FieldSpec):
         value = map(lambda v: self.element_fieldspecs.populate(v, next_path), value)
         value = filter(lambda v: v is not None, value)
         return value
+
+
+class FieldDict(FieldSpec):
+    """
+    Write and Read as exactly as provided.
+    """
+
+    def __init__(self, **kwargs):
+        super(FieldDict, self).__init__(dict, **kwargs)
 
 
 class FieldNested(FieldSpec):
