@@ -184,7 +184,7 @@ another document reference. Try ``FieldDoc`` or ``FieldAnyDoc`` instead.
 .. code:: python
 
     class SimpleDocument(doc.Doc):
-        oid = FieldObjectId()
+        oid = doc.FieldObjectId()
 
 ObjectId field accepts ``bson.ObjectId`` instance, or ``bson.ObjectId``
 compatible string (24 alphanumeric string).
@@ -202,9 +202,9 @@ Use this field to store any numeric numbers.
 .. code:: python
 
     class SimpleDocument(doc.Doc):
-        amount1 = FieldNumeric(default=3, max_value=50, min_value=10)
-        amount2 = FieldNumeric(max_value=40, none=False)
-        amount3 = FieldNumeric()        # no max, no min, can be None, no default
+        amount1 = doc.FieldNumeric(default=3, max_value=50, min_value=10)
+        amount2 = doc.FieldNumeric(max_value=40, none=False)
+        amount3 = doc.FieldNumeric()        # no max, no min, can be None, no default
         
 Available options are ...
 
@@ -223,7 +223,7 @@ Use this field to store complete any python dict without schema.
 .. code:: python
 
     class SimpleDocument(doc.Doc):
-        data = FieldDict()
+        data = doc.FieldDict()
         
 Available options are ...
 
