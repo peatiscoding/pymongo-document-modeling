@@ -185,8 +185,8 @@ Instead of returning simple ``dict``, the ``Document`` instance will be returned
     for a in cursor:
         print "%s" % a.object_id                    # cursor returned objects is now already inflated as Document.
 
-FieldSpecAware
---------------
+FieldSpecAware Object
+---------------------
 
 ``Doc`` class is inherited from ``FieldSpecAware`` class. ``FieldSpecAware`` taken care 
 of ``Field`` detection, and overseer them in translating from python object, to document 
