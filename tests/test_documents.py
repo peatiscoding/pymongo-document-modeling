@@ -1,4 +1,5 @@
 from pymongo_document import documents as doc, errors as err, conf
+import pymongo
 import unittest
 
 
@@ -37,7 +38,7 @@ class TestDocumentBasic(unittest.TestCase):
         d = SimpleDocument()
         d.save()
 
-        items = SimpleDocument.manager.find(cond={'_id': d.object_id})
+        items = SimpleDocument.manager.find({'_id': d.object_id})
         self.assertEqual(len(items), 1)
         self.assertEqual(items[0].object_id, d.object_id)
         self.assertEqual(items[0].int_val, None)
@@ -58,12 +59,12 @@ class TestDocumentBasic(unittest.TestCase):
         c.int_val_2 = 300
         c.save()
 
-        l = SimpleDocument.manager.find(cond={'_id': c.object_id})
-        self.assertEqual(len(l), 1)
-        self.assertEqual(l[0].object_id, c.object_id)
-        self.assertEqual(l[0].int_val_2, 300)
-        self.assertEqual(l[0].str_val, "default_value_changed")
-        self.assertEqual(l[0].int_val, None)        # int_val is inherited
+        cursor = SimpleDocument.manager.find({'_id': c.object_id})
+        self.assertEqual(len(cursor), 1)
+        self.assertEqual(cursor[0].object_id, c.object_id)
+        self.assertEqual(cursor[0].int_val_2, 300)
+        self.assertEqual(cursor[0].str_val, "default_value_changed")
+        self.assertEqual(cursor[0].int_val, None)        # int_val is inherited
 
     def test_document_simple_read_write_api(self):
         # Save
@@ -95,17 +96,16 @@ class TestDocumentBasic(unittest.TestCase):
         o3 = new_simple_doc(31, 'find_me')
 
         # Test Find API
-        found = SimpleDocument.manager.find(cond={
+        found = SimpleDocument.manager.find({
             'str_val': 'find_me',
-            '$sort': '-int_val'
-        })
+        }).sort('int_val', pymongo.DESCENDING)
         self.assertEqual(len(found), 3)
         self.assertEqual(found[0].object_id, o2.object_id)
         self.assertEqual(found[1].object_id, o3.object_id)
         self.assertEqual(found[2].object_id, o1.object_id)
 
         # Find with condition
-        found = SimpleDocument.manager.find(cond={
+        found = SimpleDocument.manager.find({
             'str_val': 'find_me',
             'int_val': {'$lt': 31}
         })
@@ -113,7 +113,7 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(found[0].object_id, o1.object_id)
 
         # Find with condition using $or
-        found = SimpleDocument.manager.find(cond={
+        found = SimpleDocument.manager.find({
             'str_val': 'find_me',
             '$or': [
                 {
@@ -123,8 +123,7 @@ class TestDocumentBasic(unittest.TestCase):
                     'int_val': {'$lt': 31}
                 }
             ],
-            '$sort': 'int_val'
-        })
+        }).sort('int_val')
         self.assertEqual(len(found), 2)
         self.assertEqual(found[0].object_id, o1.object_id)
         self.assertEqual(found[1].object_id, o2.object_id)
@@ -134,7 +133,7 @@ class TestDocumentBasic(unittest.TestCase):
         o3.save()
 
         # Find with nested condition
-        found = SimpleDocument.manager.find(cond={
+        found = SimpleDocument.manager.find({
             'str_val': 'find_me',
             '$or': [
                 {
@@ -143,9 +142,8 @@ class TestDocumentBasic(unittest.TestCase):
                 {
                     'int_val': {'$lt': 31}
                 }
-            ],
-            '$sort': 'int_val'
-        })
+            ]
+        }).sort('int_val')
         self.assertEqual(found[2].object_id, o3.object_id)
         self.assertEqual(found[1].object_id, o2.object_id)
         self.assertEqual(found[0].object_id, o1.object_id)
@@ -158,30 +156,32 @@ class TestDocumentBasic(unittest.TestCase):
         })
 
         # Check updated for values
-        found = SimpleDocument.manager.find(cond={
+        found = SimpleDocument.manager.find({
             'str_val': 'find_me',
             '$or': [
                 {
                     'int_val': {'$lt': 31}
                 }
             ],
-            '$sort': 'int_val'
-        })
+        }).sort('int_val')
         self.assertEqual(len(found), 0)
 
-        found = SimpleDocument.manager.find(cond={
+        found = SimpleDocument.manager.find({
             'str_val': 'find_me',
-            '$sort': 'int_val'
-        })
+        }).sort('int_val')
         self.assertEqual(len(found), 3)
         self.assertEqual(found[0].int_val, 35)
         self.assertEqual(found[1].int_val, 37)
         self.assertEqual(found[2].int_val, 55)
 
-        # Test filter API
-        cursor = SimpleDocument.manager.filter()
+        # Test find API
+        # - Using sort
+        int_seq = map(lambda o: o.int_val, SimpleDocument.manager.find({'str_val': 'find_me'}).sort('int_val', pymongo.ASCENDING))
+        self.assertEqual(int_seq, [35, 37, 55])
 
-        # FIXME: using it correctly - test it with sort, test it with collection __getitem__ method
+        # - Using __getitem__ method
+        int_seq = map(lambda o: o.int_val, SimpleDocument.manager.find({'str_val': 'find_me'}).sort('int_val', pymongo.ASCENDING)[:2])
+        self.assertEqual(int_seq, [35, 37])
 
         # Clean up
         SimpleDocument.manager.delete({'str_val': 'find_me'})

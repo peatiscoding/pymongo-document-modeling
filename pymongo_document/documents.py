@@ -1,28 +1,35 @@
-__author__ = "peatiscoding"
 from bson import ObjectId
 from conf import get_connection
 from errors import DeveloperFault, DocumentValidationError, FieldValidationError
 from pymongo.cursor import Cursor
 import helpers as helper
 import gettext as _
-import pymongo
 import datetime, time
 import inspect
 import six
 import re
 
+__author__ = "peatiscoding"
 
-class WorkingCursor(Cursor):
+
+class MaskedCursor(Cursor):
     """
     Cursor
     """
     def __init__(self, *args, **kwargs):
-        super(WorkingCursor, self).__init__(*args, **kwargs)
-        self.inflater = None
+        super(MaskedCursor, self).__init__(*args, **kwargs)
+        self.inflate_callback = None
 
     def next(self):
-        o = super(WorkingCursor, self).next()
-        return self.inflater(o) if self.inflater else o
+        o = super(MaskedCursor, self).next()
+        return self.inflate_callback(o) if self.inflate_callback else o
+
+    def __len__(self):
+        return self.count()
+
+    def __getitem__(self, item):
+        o = super(MaskedCursor, self).__getitem__(item)
+        return self.inflate_callback(o) if isinstance(o, dict) and self.inflate_callback else o
 
 
 class Docs(object):
@@ -44,9 +51,6 @@ class Docs(object):
         if db_name is None:
             raise DeveloperFault("Unable to create empty database name document manager")
         self.o = self.db["intradoc_%s" % db_name]
-
-    def single(self, object_id):
-        return self.o.find_one(helper.object_id(object_id))
 
     def write(self, document, **kwargs):
         document['_id'] = kwargs.get('object_id', document['_id'] or None)
@@ -92,67 +96,26 @@ class Docs(object):
             print 'Updating "%s": %s' % (self.db_name, cond)
         self.o.update_many(cond, update, upsert=False)
 
-    def filter(self, *args, **kwargs):
-        cursor = self.o.find(*args, **kwargs)
+    def find(self, *args, **kwargs):
+        cache = {}
 
         def inflate(doc):
-            print "Inflating %s" % doc
-            doc_key = self.collection_name
-            if '_subtype' in doc:
-                subtype = doc.pop('_subtype')
-                doc_key = "%s:%s" % (self.db_name, subtype)
-            if doc_key not in Docs.installed:
-                raise DeveloperFault("Unknown document type:%s" % doc_key)
-            o = Docs.installed[doc_key]()
-            o.inflate(doc)
-            return o
+            key = str(doc['_id'])
+            if key not in cache:
+                doc_key = self.collection_name
+                if '_subtype' in doc:
+                    subtype = doc.pop('_subtype')
+                    doc_key = "%s:%s" % (self.db_name, subtype)
+                if doc_key not in Docs.installed:
+                    raise DeveloperFault("Unknown document type:%s" % doc_key)
+                o = Docs.installed[doc_key]()
+                o.inflate(doc)
+                cache[key] = o
+            return cache[key]
 
-        r = WorkingCursor(self.o, *args, **kwargs)
-        r.inflater = inflate
+        r = MaskedCursor(self.o, *args, **kwargs)
+        r.inflate_callback = inflate
         return r
-
-    def find(self, pagesize=0, page=0, cond=None, **kwargs):
-        """
-        Call pymongo find, manipulate pagesize, page based on given cond, and page_size
-
-        :param pagesize:
-        :param page:
-        :param cond:
-        :param kwargs:
-        :return:
-        """
-        if cond is None:
-            cond = {}
-        cond.update(kwargs)
-        sort = cond.pop('$sort', '_id')
-        # IF you are subclass's manager - then you need to queries only subclass items.
-        if self.sub_collection_name is not None:
-            cond['_subtype'] = {'$regex': '^%s' % self.sub_collection_name}
-        cursor = self.o.find(cond)
-
-        # sorting (optional)
-        if sort is not None:
-            m = re.match('(-?)(.*)', sort)
-            if m:
-                cursor.sort(m.group(2), pymongo.DESCENDING if m.group(1) == '-' else pymongo.ASCENDING)
-
-        # pagination
-        if pagesize > 0:
-            cursor.skip(pagesize*page)
-            cursor.limit(pagesize)
-
-        # Export result
-        def inflater(doc):
-            doc_key = self.collection_name
-            if '_subtype' in doc:
-                subtype = doc.pop('_subtype')
-                doc_key = "%s:%s" % (self.db_name, subtype)
-            if doc_key not in Docs.installed:
-                raise DeveloperFault("Unknown document type:%s" % doc_key)
-            o = Docs.installed[doc_key]()
-            o.inflate(doc)
-            return o
-        return map(inflater, cursor)
 
     def count(self, cond={}, **kwargs):
         cond.update(kwargs)
@@ -193,7 +156,7 @@ class Docs(object):
         if object_id is None:
             return Docs.installed[collection_name]()
         man = cls.installed[collection_name].manager
-        raw = man.single(object_id)
+        raw = man.o.find_one(helper.object_id(object_id))
         doc_key = man.db_name
         if '_subtype' in raw:
             subtype = raw.pop('_subtype')
@@ -767,7 +730,7 @@ class Doc(FieldSpecAware):
 
     def load(self):
         if self.object_id is not None:
-            raw = self.manager.single(self.object_id)
+            raw = self.manager.o.find_one(self.object_id)
             if not raw:
                 raise DocumentValidationError(_('Failed to load document, unknown document_id=%s' % self.object_id))
             self.inflate(raw)
