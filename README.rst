@@ -160,6 +160,31 @@ imported. This ``MySimpleDoc`` will have exactly 2 fields (not 1).
     o.name = 'peatiscoding'     # Set name
     o.save()                    # Successfully saved to collection 'my_simple_doc'
 
+Document.manager
+----------------
+
+All documents class will be equipped with ``manager`` object (``pymongo_document.Docs`` class).
+``manager`` is just like ``objects`` in Django's Model's manager. Allows user to ``find`` , ``update``,
+or ``delete`` documents.
+
+Find API
+~~~~~~~~
+
+To make things easy, I've decided to use pymongo existing ``find`` api. For complete doc
+see `find() document`_. pymongo collection's ``find()`` method normally return ``dict`` as output.
+Instead of returning simple ``dict``, the ``Document`` instance will be returned.
+
+.. _find() document: http://api.mongodb.org/python/current/api/pymongo/collection.html#pymongo.collection.Collection.find
+
+.. code:: python
+
+    o = MySimpleDoc()
+    o.save()
+
+    cursor = MySimpleDoc.manager.find().sort('_id') # use Cursor's method as pymongo did.
+    for a in cursor:
+        print "%s" % a.object_id                    # cursor returned objects is now already inflated as Document.
+
 FieldSpecAware
 --------------
 

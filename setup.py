@@ -10,7 +10,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='pymongo-document-modeling',
-    version='0.9.0.dev8',
+    version='0.9.0.dev9',
     description='PyMongo data modeling library',
     long_description=long_description,
     url='https://github.com/peatiscoding/pymongo-document-modeling',
