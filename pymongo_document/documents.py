@@ -50,7 +50,7 @@ class Docs(object):
 
         if db_name is None:
             raise DeveloperFault("Unable to create empty database name document manager")
-        self.o = self.db["intradoc_%s" % db_name]
+        self.o = self.db[db_name]
 
     def write(self, document, **kwargs):
         document['_id'] = kwargs.get('object_id', document['_id'] or None)
