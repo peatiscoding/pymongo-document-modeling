@@ -198,6 +198,37 @@ dict within another document. See @FieldNested for more information.
 Fields
 ------
 
+Every field are customisable via the use of ``**kwargs`` of which each options will be provided in the
+sample per each individual fields below.
+
+In addition, every field is compatible with assigning its own ``validator`` as well. To add your own
+validators. Create a field, then specific validators keyword argument in field creation.
+
+Validator can be defined in 2 styles.
+
+* ``Callable`` - if you supplied validators as a simple callable, then you are responsible to raise a proper ``FieldValidationError`` manually.
+* ``(Callable, basestring)`` - if ``callable`` returns True, ``basestring`` will be raised as an Error message.
+
+Here is an example.
+
+.. code:: python
+
+     def in_the_past_or_throw(value, name):
+            if isinstance(value, datetime) and value < datetime.now():
+                return
+            raise err.FieldValidationError(value, 'Value must be past', name)
+
+    class TestMeDocument(doc.Doc):
+        positive_number = doc.FieldNumeric(validators=[(lambda v: v < 0, 'positive number is required')])
+        even_number = doc.FieldNumeric(validators=[(lambda v: v % 2 == 1, 'even number only')])
+        negative_odd_number = doc.FieldNumeric(validators=[
+            (lambda v: v > 0, 'negative number is required'),
+            (lambda v: v % 2 == 0, 'odd number is required')
+        ])
+        custom_value = doc.FieldDateTime(validators=[in_the_past_or_throw])  # Callable style
+
+By assigning incorrect value ``FieldValidationError`` will be raised.
+
 FieldObjectId
 ~~~~~~~~~~~~~
 

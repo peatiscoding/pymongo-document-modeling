@@ -1,7 +1,7 @@
 from pymongo_document import documents as doc, errors as err, conf
 import pymongo
 import unittest
-
+from datetime import datetime, timedelta
 
 class SimpleDocument(doc.Doc):
     int_val = doc.FieldNumeric()
@@ -413,6 +413,55 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertEqual(r.number2, o.number2)
         self.assertEqual(r.number3, o.number3)
         self.assertEqual(r.number4, o.number4)
+
+    def test_validation_field(self):
+        def define_bad_validation_field_document():
+            class BadValidationField(doc.Doc):
+                bad_validation_field = doc.FieldNumeric(validators='simple_string')
+
+                class Meta:
+                    collection_name = 'create_me_if_you_can'
+
+        self.assertRaises(err.DeveloperFault, define_bad_validation_field_document)
+
+        def in_the_past_or_throw(value, name):
+            if isinstance(value, datetime) and value < datetime.now():
+                return
+            raise err.FieldValidationError(value, 'Value must be past', name)
+
+        class TestMeDocument(doc.Doc):
+            positive_number = doc.FieldNumeric(validators=[(lambda v: v < 0, 'positive number is required')])
+            even_number = doc.FieldNumeric(validators=[(lambda v: v % 2 == 1, 'even number only')])
+            negative_odd_number = doc.FieldNumeric(validators=[
+                (lambda v: v > 0, 'negative number is required'),
+                (lambda v: v % 2 == 0, 'odd number is required')
+            ])
+            custom_value = doc.FieldDateTime(validators=[in_the_past_or_throw])
+
+            class Meta:
+                collection_name = 'test_me_document'
+
+        o = TestMeDocument()
+
+        def assign_odd_number():
+            o.even_number = 31
+        self.assertRaises(err.FieldValidationError, assign_odd_number)
+        o.even_number = 30
+
+        def assign_negative_number():
+            o.positive_number = -1
+        self.assertRaises(err.FieldValidationError, assign_negative_number)
+        o.positive_number = 300
+
+        def assign_negative_even_number():
+            o.negative_odd_number = -2
+        self.assertRaises(err.FieldValidationError, assign_negative_even_number)
+        o.negative_odd_number = -3
+
+        def assign_future_value_date():
+            o.custom_value = datetime.now() + timedelta(days=1)
+        self.assertRaises(err.FieldValidationError, assign_future_value_date)
+        o.custom_value = datetime.now() - timedelta(days=1)
 
     def test_connections(self):
         def define_bad_connection_class():
