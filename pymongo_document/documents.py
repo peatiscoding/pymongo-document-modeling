@@ -80,7 +80,7 @@ class Docs(object):
             map(lambda de: de(ids, verbose), on_delete)
         self.o.delete_many(cond)
 
-    def update(self, cond={}, update={}, **kwargs):
+    def update(self, cond, update, **kwargs):
         """
         Call pymongo update_many directly, (upsert=False) - no field validation will be applied.
 
@@ -91,6 +91,10 @@ class Docs(object):
         :param kwargs:
         :return:
         """
+        if cond is None:
+            cond = {}
+        if update is None:
+            raise DeveloperFault('update cannot be none')
         verbose = kwargs.pop('verbose', False)
         if verbose:
             print 'Updating "%s": %s' % (self.db_name, cond)
@@ -117,7 +121,9 @@ class Docs(object):
         r.inflate_callback = inflate
         return r
 
-    def count(self, cond={}, **kwargs):
+    def count(self, cond, **kwargs):
+        if cond is None:
+            cond = {}
         cond.update(kwargs)
         return self.o.find(cond, []).count()
 
