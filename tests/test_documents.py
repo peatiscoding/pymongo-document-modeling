@@ -3,6 +3,7 @@ import pymongo
 import unittest
 from datetime import datetime, timedelta
 
+
 class SimpleDocument(doc.Doc):
     int_val = doc.FieldNumeric()
     str_val = doc.FieldString(none=False, default="default_value_of_string")
@@ -462,6 +463,35 @@ class TestDocumentBasic(unittest.TestCase):
             o.custom_value = datetime.now() + timedelta(days=1)
         self.assertRaises(err.FieldValidationError, assign_future_value_date)
         o.custom_value = datetime.now() - timedelta(days=1)
+
+    def test_tuple_field(self):
+        class TupleDocument(doc.Doc):
+            tuple_field = doc.FieldTuple(doc.FieldNumeric(validators=[(lambda v: v <= 5, 'Value must be more than 5')]),
+                                         doc.FieldString(),
+                                         doc.FieldNumeric(none=False),
+                                         doc.FieldNumeric(none=True))
+
+            class Meta:
+                collection_name = 'test_tuple_document'
+
+        o = TupleDocument()
+
+        # Test Assign Bad Values to tuple
+        def assign_bad_values():
+            o.tuple_field = (12, 'test', None, 12)
+        self.assertRaises(doc.FieldValidationError, assign_bad_values)
+
+        def assign_bad_values2():
+            o.tuple_field = (5, 'test', 50, None)
+        self.assertRaises(doc.FieldValidationError, assign_bad_values2)
+
+        # Assign good value
+        o.tuple_field = (12, 'test', 50, None)
+        o.save()
+
+        # Test loading
+        l = TupleDocument(o.object_id)
+        self.assertEqual(l.tuple_field, o.tuple_field)
 
     def test_connections(self):
         def define_bad_connection_class():

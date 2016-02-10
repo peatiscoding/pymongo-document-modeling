@@ -518,6 +518,54 @@ class FieldList(FieldSpec):
         return value
 
 
+class FieldTuple(FieldSpec):
+
+    def __init__(self, *args, **kwargs):
+        for a in args:
+            if not isinstance(a, FieldSpec):
+                raise ValueError('element_fieldspec must be FieldSpec instance')
+        kwargs.update({
+            'validators': [
+                self._validate_element
+            ] + kwargs.get('validators', [])
+        })
+        self.element_fieldspecs = args
+        super(FieldTuple, self).__init__((tuple, list), **kwargs)
+
+    def to_document(self, value):
+        if value is None:
+            return []
+        return map(lambda v: self.element_fieldspecs[v[0]].to_document(v[1]), enumerate(value))
+
+    def from_document(self, value):
+        if value is None:
+            return ()
+        if not isinstance(value, list):
+            raise DocumentValidationError('Cannot convert to tuple, expected document value as a list, value=%s' % value)
+        return tuple(map(lambda v: self.element_fieldspecs[v[0]].from_document(v[1]), enumerate(value)))
+
+    def from_serialized(self, value):
+        if value is None:
+            return ()
+        v = map(lambda v: self.element_fieldspecs[v[0]].from_serialized(v[1]), enumerate(value))
+        return v
+
+    def to_serialized(self, value):
+        if value is None:
+            return []
+        v = map(lambda v: self.element_fieldspecs[v[0]].to_serialized(v[1]), enumerate(value))
+        return v
+
+    def _validate_element(self, value, name):
+        if len(value) != len(self.element_fieldspecs):
+            raise FieldValidationError('FieldSpecTuple expected tuple size=%s' % len(self.element_fieldspecs))
+
+        if value is None:
+            return []
+        # incoming value is sure be tuple or list, so we need to iterate that
+        map(lambda v: self.element_fieldspecs[v[0]].validate(v[1], name), enumerate(value))
+
+
 class FieldDict(FieldSpec):
     """
     Write and Read as exactly as provided.

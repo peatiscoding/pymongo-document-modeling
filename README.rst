@@ -323,3 +323,30 @@ Use this field to store complete any python dict without schema.
 
 * ``default`` - (dict) set a default value for this field. Default is None.
 * ``none`` - (boolean) set to False to prohibit None value for this field. Default is True.
+
+
+FieldTuple
+
+Use this field to store a FieldSpec value that obligated by each rule based on position on the list.
+
+*Usage*
+
+.. code:: python
+
+    class TupleFieldDocument(doc.Doc):
+        data = doc.FieldTuple(doc.FieldNumeric(), doc.FieldString(), doc.FieldNumeric())
+
+* ``default`` - (tuple) set a default value for this field. Default is None.
+* ``none`` - (boolean) set to False to prohibit Nont value for this field. Default is True.
+
+Unlike ``FieldList``, ``FieldTuple`` constructor accept ``*args`` as argument of ``FieldSpec``. Each ``FieldSpec``
+correspond to Field specification for each element on the tuple respectively.
+
+Therefore ``FieldTuple`` assignment required an exact tuple size to the ``FieldSpec`` provided in constructor.
+
+.. code:: python
+
+    o = TupleFieldDocument()
+    o.data = (12, 'test', 12)       # this is okay
+    o.data = (12, 'test')           # raise doc.FieldValidationError invalid tuple size
+    o.data = ('test', 24, 45)       # raise doc.FieldValidationError index 1 should be integer, index 2 should be text
