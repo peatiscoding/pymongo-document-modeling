@@ -8,6 +8,7 @@ import datetime, time
 import inspect
 import six
 import re
+import copy
 
 __author__ = "peatiscoding"
 
@@ -650,7 +651,9 @@ class _FieldSpecAware(object):
                 and item not in ['is_field_spec', 'populate', 'field_spec', 'fields', 'dox'] \
                 and self.is_field_spec(item):
             fs = self.field_spec(item)
-            return self.dox.get(item, fs.default)
+            if item not in self.dox:
+                self.dox[item] = copy.deepcopy(fs.default)
+            return self.dox.get(item)
         return r
 
     def __setattr__(self, key, value):

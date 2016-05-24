@@ -214,6 +214,11 @@ class TestDocumentBasic(unittest.TestCase):
         self.assertTrue(c in o.list_of_docs)
         self.assertTrue(s in o.list_of_docs)
 
+        # Check BUG:
+        #   List default value inherit through multiple instance
+        n = HolderOfSimpleDocuments()
+        self.assertEqual(len(n.list_of_docs), 0)
+
     def test_object_id_field(self):
 
         class D(doc.Doc):
