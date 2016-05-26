@@ -184,6 +184,17 @@ class TestDocumentBasic(unittest.TestCase):
         int_seq = map(lambda o: o.int_val, SimpleDocument.manager.find({'str_val': 'find_me'}).sort('int_val', pymongo.ASCENDING)[:2])
         self.assertEqual(int_seq, [35, 37])
 
+        # Test del API
+        found = SimpleDocument.manager.find({
+            'str_val': 'find_me'
+        })
+        self.assertEqual(len(found), 3)
+
+        # - Delete one
+        found[0].delete()
+        found[1].delete()
+        self.assertEqual(len(found), 1)
+
         # Clean up
         SimpleDocument.manager.delete({'str_val': 'find_me'})
 

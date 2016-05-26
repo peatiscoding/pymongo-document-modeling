@@ -835,6 +835,11 @@ class Doc(FieldSpecAware):
             raise DeveloperFault(_("Unable to check permission against non-modeled document"))
         user.can("%s+%s" % (self.manager.collection_name, action), args[0] if len(args) > 0 else None, True)
 
+    def delete(self):
+        self.manager.delete(cond={
+            '_id': self.object_id
+        })
+
     def __eq__(self, other):
         if issubclass(other.__class__, self.__class__):
             return self.object_id == other.object_id
