@@ -234,6 +234,27 @@ class FieldSpec(object):
             else:
                 raise DeveloperFault('Bad validators %s' % v)
 
+        self.field_name = None
+
+    def assign_field_name(self, field_name):
+        self.field_name = field_name
+
+    def __get__(self, instance, owner):
+        # Access via class method
+        if instance is None:
+            return self
+        v = instance.dox.get(self.field_name, None)
+        if v is None and self.default is not None:
+            v = instance.dox[self.field_name] = copy.deepcopy(self.default)
+        return v
+
+    def __set__(self, instance, value):
+        if instance is None:
+            raise AttributeError("Cannot assign attribute!")
+        value = self.from_python(value)
+        self.validate(value, self.field_name)
+        instance.dox[self.field_name] = value
+
     def add_named_validator(self, callback, message):
         def callme(value, name):
             if callback(value):
@@ -634,6 +655,10 @@ class _FieldSpecAware(object):
     def __init__(self):
         super(_FieldSpecAware, self).__init__()
         self.__dict__['fields'], self.__dict__['doc_key_map'] = _field_specs(self.__class__)
+        for key in self.__dict__['fields']:
+            f = self.__dict__['fields'][key]
+            if isinstance(f, FieldSpec):
+                f.assign_field_name(key)
         self.dox = {}
 
     def is_field_spec(self, item):
@@ -644,26 +669,6 @@ class _FieldSpecAware(object):
             return self.fields[item]
         else:
             return None
-
-    def __getattribute__(self, item):
-        r = super(_FieldSpecAware, self).__getattribute__(item)
-        if not item.startswith('__') \
-                and item not in ['is_field_spec', 'populate', 'field_spec', 'fields', 'dox'] \
-                and self.is_field_spec(item):
-            fs = self.field_spec(item)
-            if item not in self.dox:
-                self.dox[item] = copy.deepcopy(fs.default)
-            return self.dox.get(item)
-        return r
-
-    def __setattr__(self, key, value):
-        fs = self.field_spec(key)
-        if fs is not None:
-            value = fs.from_python(value)
-            fs.validate(value, key)
-            self.dox[key] = value
-            return
-        super(_FieldSpecAware, self).__setattr__(key, value)
 
     def populate(self, path):
         (cp, sp, next_path) = path.partition('.')
@@ -793,6 +798,7 @@ class Doc(FieldSpecAware):
     PERM_R = 'read'
     PERM_D = 'delete'
     object_id = FieldObjectId(key="_id")
+    manager = None                          # type: Docs
 
     def __init__(self, object_id=None):
         super(Doc, self).__init__()
